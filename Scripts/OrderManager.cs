@@ -203,9 +203,12 @@ namespace Match3
         {
             bool ingredientUsed = false;
 
-            // 對每個活躍訂單嘗試使用食材
-            foreach (var order in activeOrders.ToList())
+            // 只對當前顯示的訂單（第一個訂單）收集食材
+            // 這樣可以避免為其他訂單收集食材，導致顯示錯誤
+            if (activeOrders.Count > 0)
             {
+                var order = activeOrders[0];  // 只處理第一個（當前顯示的）訂單
+
                 if (order.recipe.RequiredIngredients.ContainsKey(foodType))
                 {
                     int needed = order.recipe.RequiredIngredients[foodType];
@@ -266,8 +269,6 @@ namespace Match3
                                 CompleteOrder(order);
                             }
                         }
-
-                        break; // 每次只對一個訂單使用食材
                     }
                 }
             }

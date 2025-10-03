@@ -41,6 +41,7 @@ namespace Match3
         private VisualElement orderPanel;
         private VisualElement platePanel;
         private Label dishNameLabel;
+        private Label remainingOrdersLabel;  // 剩餘訂單數標籤
         private VisualElement ingredientContainer;
         private VisualElement plateIconContainer;
 
@@ -472,6 +473,33 @@ namespace Match3
 
             // 初始時隱藏
             platePanel.style.display = DisplayStyle.None;
+
+            // 創建剩餘訂單數標籤 - 獨立於餐盤，類似剩餘時間
+            remainingOrdersLabel = new Label();
+            remainingOrdersLabel.name = "RemainingOrdersLabel";
+            remainingOrdersLabel.style.position = Position.Absolute;
+            remainingOrdersLabel.style.right = -platePanelPosition.x - 70;  // 再往左移動 (從 -100 改為 +50)
+            remainingOrdersLabel.style.bottom = new StyleLength(new Length(15, LengthUnit.Percent)); // 螢幕底部往上15%
+            remainingOrdersLabel.style.translate = new StyleTranslate(new Translate(0, 0));
+            remainingOrdersLabel.style.fontSize = 120;  // 再放大字體 (從 150 改為 180)
+            remainingOrdersLabel.style.color = new Color(0.69f, 0.46f, 0.24f, 1f);  // 棕色文字
+            remainingOrdersLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            remainingOrdersLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            remainingOrdersLabel.style.whiteSpace = WhiteSpace.NoWrap;
+
+            // 添加剩餘訂單數標籤到根元素
+            if (coverElement != null)
+            {
+                int coverIndex = rootElement.IndexOf(coverElement);
+                rootElement.Insert(coverIndex, remainingOrdersLabel);
+            }
+            else
+            {
+                rootElement.Add(remainingOrdersLabel);
+            }
+
+            // 初始化剩餘訂單數顯示
+            UpdateRemainingOrdersDisplay();
 
             DebugLog("餐盤面板創建完成");
         }
@@ -918,6 +946,7 @@ namespace Match3
             if (order != null)
             {
                 UpdateOrderDisplay(recipe, order.collectedIngredients, recipe.RequiredIngredients);
+                UpdateRemainingOrdersDisplay();  // 更新剩餘訂單數
             }
         }
 
@@ -944,6 +973,9 @@ namespace Match3
 
             // 播放餐盤動畫
             PlayPlateSlideAnimation();
+
+            // 更新剩餘訂單數
+            UpdateRemainingOrdersDisplay();
 
             // 延遲顯示下一個訂單（而不是清空）
             StartCoroutine(DelayedShowNextOrder());
@@ -1084,6 +1116,44 @@ namespace Match3
             else
             {
                 DebugLog("OrderManager.Instance 為 null，無法刷新訂單");
+            }
+        }
+
+        /// <summary>
+        /// 更新剩餘訂單數顯示
+        /// </summary>
+        private void UpdateRemainingOrdersDisplay()
+        {
+            if (remainingOrdersLabel == null)
+                return;
+
+            // 清空現有內容
+            remainingOrdersLabel.Clear();
+
+            // 如果還沒初始化完成，先顯示預設文字
+            if (OrderManager.Instance == null || LevelData.Instance == null)
+            {
+                remainingOrdersLabel.text = "Loading...";
+                remainingOrdersLabel.style.display = DisplayStyle.Flex;
+                return;
+            }
+
+            int completed = OrderManager.Instance.CompletedOrderCount;
+            int required = LevelData.Instance.RequiredOrderCount;
+            int remaining = required - completed;
+
+            if (remaining > 0)
+            {
+                string dishText = remaining == 1 ? "dish" : "dishes";
+
+                // 使用 rich text 格式讓數字部分更大且為黃色
+                remainingOrdersLabel.enableRichText = true;
+                remainingOrdersLabel.text = $"<size=180><color=#F25A2D>{remaining}</color></size>  more {dishText} to go!!";
+                remainingOrdersLabel.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                remainingOrdersLabel.style.display = DisplayStyle.None;
             }
         }
 
