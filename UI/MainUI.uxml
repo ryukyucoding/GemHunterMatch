@@ -11,7 +11,7 @@
         
         <!-- 時間文字：右上角，時間條下方 -->
         <ui:VisualElement name="TimeTextContainer" style="position: absolute; top: 150px; right: 80px; flex-direction: column; align-items: flex-end; z-index: 101; display: none;">
-            <ui:Label tabindex="-1" text="所剩時間" display-tooltip-when-elided="true" name="MoveTitleLabel" style="font-size: 120px; color: white; -unity-font-style: bold; text-shadow: 8px 8px 0 rgb(8, 10, 61);" />
+            <ui:Label tabindex="-1" text="所剩時間" display-tooltip-when-elided="true" name="MoveTitleLabel" style="font-size: 120px; color: white; -unity-font-style: bold; text-shadow: 12px 12px 0 rgb(8, 10, 61);" />
             <ui:Label tabindex="-1" text="99:99" display-tooltip-when-elided="true" name="MoveCounter" style="font-size: 120px; color: white; -unity-font-style: bold; text-shadow: 8px 8px 0 rgb(8, 10, 61);" />
             
         </ui:VisualElement>

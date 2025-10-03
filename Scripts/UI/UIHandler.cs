@@ -161,12 +161,7 @@ namespace Match3
             var playAgainButton = m_Document.rootVisualElement.Q<Button>("ReplayButton");
             playAgainButton.clicked += () =>
             {
-                // 在重載場景前清空 UI 狀態
-                if (CookingUIManager.Instance != null)
-                {
-                    CookingUIManager.Instance.ResetUI();
-                }
-                
+                // 場景重載時會自動重新創建所有對象，訂單和餐盤會自動重新顯示
                 FadeOut(() =>
                 {
                     SceneManager.LoadScene(SceneManager.GetActiveScene().name, LoadSceneMode.Single);

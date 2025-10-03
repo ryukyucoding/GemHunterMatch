@@ -17,7 +17,7 @@ namespace Match3
 
         [Space(10)]
         [Header("📋 必要設置")]
-        [Tooltip("料理配方資料庫")]
+        [Tooltip("(已廢棄) 現在使用 RecipeLibrary 直接從代碼讀取配方")]
         public RecipeDatabase recipeDatabase;
 
         [Space(10)]
@@ -100,11 +100,17 @@ namespace Match3
                 initializer.fallbackLettuceSprite = lettuceSprite;
                 initializer.fallbackSteakSprite = steakSprite;
                 initializer.fallbackTomatoSprite = tomatoSprite;
+                initializer.platePanelBackground = platePanelBackground;
 
                 DebugLog("✓ 創建了 CookingSystemInitializer");
             }
             else
             {
+                // 更新已存在的 Initializer 的餐盤背景設定
+                if (platePanelBackground != null)
+                {
+                    CookingSystemInitializer.Instance.platePanelBackground = platePanelBackground;
+                }
                 DebugLog("✓ CookingSystemInitializer 已存在");
             }
         }
@@ -114,6 +120,9 @@ namespace Match3
         /// </summary>
         private void SetupOrderManager()
         {
+            // 注意：現在使用 RecipeLibrary 系統，不再需要 recipeDatabase
+            DebugLog("SetupOrderManager - 使用 RecipeLibrary 系統（配方直接從代碼載入）");
+
             // 檢查是否已有 OrderManager
             if (OrderManager.Instance == null)
             {
@@ -121,31 +130,23 @@ namespace Match3
                 GameObject orderManagerObj = new GameObject("OrderManager");
                 var orderManager = orderManagerObj.AddComponent<OrderManager>();
 
-                // 設定配方資料庫
-                if (recipeDatabase != null)
-                {
-                    orderManager.recipeDatabase = recipeDatabase;
-                    DebugLog("✓ 設定了 RecipeDatabase");
-                }
-                else
-                {
-                    DebugLog("⚠️ 警告：未設定 RecipeDatabase");
-                }
+                // recipeDatabase 欄位已廢棄，不再需要設置
+                // OrderManager 會自動使用 RecipeLibrary.GetAllRecipes()
 
                 orderManager.enableDebugLog = enableDebugLog;
 
-                DebugLog("✓ 創建了 OrderManager");
+                DebugLog("✓ 創建了 OrderManager（使用 RecipeLibrary）");
             }
             else
             {
-                // 更新現有的 OrderManager
-                if (recipeDatabase != null && OrderManager.Instance.recipeDatabase == null)
-                {
-                    OrderManager.Instance.recipeDatabase = recipeDatabase;
-                    DebugLog("✓ 更新了 OrderManager 的 RecipeDatabase");
-                }
+                DebugLog("✓ OrderManager 已存在（使用 RecipeLibrary）");
 
-                DebugLog("✓ OrderManager 已存在");
+                // 如果沒有活躍訂單，立即創建一個
+                if (OrderManager.Instance.GetActiveOrders().Count == 0)
+                {
+                    DebugLog("OrderManager 沒有活躍訂單，立即創建新訂單");
+                    OrderManager.Instance.StartNewOrder();
+                }
             }
         }
 
@@ -189,8 +190,7 @@ namespace Match3
             if (cookingUIManager.steakSprite == null) cookingUIManager.steakSprite = steakSprite;
             if (cookingUIManager.tomatoSprite == null) cookingUIManager.tomatoSprite = tomatoSprite;
             
-            // 設定餐盤背景
-            if (platePanelBackground != null) cookingUIManager.platePanelBackground = platePanelBackground;
+            // 餐盤背景已經由 CookingSystemInitializer 設置，這裡不需要重複設置
 
             DebugLog("✓ 應用了 UI 設定");
         }

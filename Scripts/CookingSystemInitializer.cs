@@ -26,9 +26,12 @@ namespace Match3
         public Sprite fallbackSteakSprite;
         public Sprite fallbackTomatoSprite;
 
+        [Header("餐盤背景")]
+        public Sprite platePanelBackground;
+
         [Header("設定")]
         public bool enableDebugLog = true;
-        public bool initializeOnStart = true;
+        public bool initializeOnStart = false;  // 默认关闭，由 CookingSystemSetup 控制初始化
 
         // Singleton 模式
         public static CookingSystemInitializer Instance { get; private set; }
@@ -44,7 +47,7 @@ namespace Match3
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+                // 不使用 DontDestroyOnLoad，让它随场景重载而重新创建
             }
             else
             {
@@ -85,10 +88,21 @@ namespace Match3
                 return;
             }
 
+            // 在 Awake 協程開始前立即設定餐盤背景（確保 CreatePlatePanel 時能使用）
+            if (platePanelBackground != null)
+            {
+                cookingUIManager.platePanelBackground = platePanelBackground;
+                DebugLog($"✓ 已設定餐盤背景: {platePanelBackground.name}");
+            }
+            else
+            {
+                DebugLog("⚠️ platePanelBackground 為 null");
+            }
+
             // 載入並設定食材圖示
             LoadAndAssignFoodSprites(cookingUIManager);
 
-            DebugLog("料理系統初始化完成！");
+            DebugLog("✅ 料理系統初始化完成！");
         }
 
         /// <summary>
@@ -139,15 +153,17 @@ namespace Match3
             CookingUIManager existingManager = uiDocument.GetComponent<CookingUIManager>();
             if (existingManager != null)
             {
-                DebugLog("CookingUIManager 已存在，使用現有的");
-                return existingManager;
+                DebugLog("CookingUIManager 已存在，銷毀舊的並重新創建");
+                // 場景重載後需要重新創建，否則協程和事件訂閱會失效
+                DestroyImmediate(existingManager);
+                existingManager = null;
             }
 
             // 檢查場景中是否已有其他 CookingUIManager
-            if (CookingUIManager.Instance != null)
+            if (CookingUIManager.Instance != null && existingManager == null)
             {
-                DebugLog("場景中已存在 CookingUIManager Instance");
-                return CookingUIManager.Instance;
+                DebugLog("場景中已存在 CookingUIManager Instance，銷毀舊的並重新創建");
+                DestroyImmediate(CookingUIManager.Instance.gameObject);
             }
 
             // 添加新的 CookingUIManager 組件

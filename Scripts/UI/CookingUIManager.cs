@@ -91,11 +91,23 @@ namespace Match3
         
         IEnumerator WaitForUIDocument()
         {
+            DebugLog("等待 UIDocument...");
             yield return new WaitForSeconds(0.5f);
             uiDocument = FindFirstObjectByType<UIDocument>();
+            DebugLog($"找到 UIDocument: {(uiDocument != null ? "✅" : "❌")}");
+
             if (uiDocument != null)
             {
                 InitializeUI();
+                DebugLog($"InitializeUI 完成，orderPanel: {(orderPanel != null ? "✅" : "❌")}, platePanel: {(platePanel != null ? "✅" : "❌")}");
+                
+                // UI 初始化完成後，立即訂閱事件
+                SubscribeToOrderManagerEvents();
+                DebugLog("UI 初始化完成後已訂閱 OrderManager 事件");
+            }
+            else
+            {
+                DebugLog("❌ 錯誤：找不到 UIDocument，無法初始化 UI");
             }
 
             // UI 初始化完成後，再顯示初始訂單
@@ -104,8 +116,8 @@ namespace Match3
 
         private void Start()
         {
-            // 訂閱 OrderManager 事件（必須在顯示訂單之前）
-            SubscribeToOrderManagerEvents();
+            // 訂閱事件會在 WaitForUIDocument 協程中完成，確保 UI 初始化後才訂閱
+            // 這樣可以避免在 UI 未準備好時收到事件
         }
         
         private void OnEnable()
@@ -114,7 +126,28 @@ namespace Match3
             if (OrderManager.Instance != null)
             {
                 SubscribeToOrderManagerEvents();
+
+                // 如果 UI 已經初始化，重新顯示訂單和餐盤
+                if (orderPanel != null && platePanel != null)
+                {
+                    StartCoroutine(RefreshUIOnEnable());
+                }
             }
+        }
+
+        /// <summary>
+        /// OnEnable 時刷新 UI 顯示
+        /// </summary>
+        private IEnumerator RefreshUIOnEnable()
+        {
+            // 等待幾幀確保 OrderManager 已更新
+            yield return null;
+            yield return null;
+
+            RefreshCurrentOrderDisplay();
+            RefreshPlate();
+
+            DebugLog("OnEnable: 已刷新訂單和餐盤顯示");
         }
         
         /// <summary>
@@ -122,18 +155,32 @@ namespace Match3
         /// </summary>
         private IEnumerator ShowInitialOrderDelayed()
         {
-            // 等待幾幀確保 OrderManager.Start() 已執行
-            yield return null;
-            yield return null;
-            yield return null;
-            
-            // 強制刷新訂單顯示
-            RefreshCurrentOrderDisplay();
-            
-            // 刷新餐盤（初始狀態為空）
-            RefreshPlate();
-            
-            DebugLog("已顯示初始訂單和餐盤");
+            DebugLog("ShowInitialOrderDelayed 開始");
+
+            // 等待更多幀確保 OrderManager.Start() 已執行
+            yield return new WaitForSeconds(0.2f);
+
+            DebugLog($"準備刷新訂單，OrderManager.Instance: {(OrderManager.Instance != null ? "✅" : "❌")}");
+
+            if (OrderManager.Instance != null)
+            {
+                var activeOrders = OrderManager.Instance.GetActiveOrders();
+                DebugLog($"活躍訂單數量: {activeOrders.Count}");
+
+                // 如果有訂單，立即顯示
+                if (activeOrders.Count > 0)
+                {
+                    RefreshCurrentOrderDisplay();
+                    RefreshPlate();
+                }
+                else
+                {
+                    DebugLog("目前沒有訂單，等待 OnNewOrderStarted 事件");
+                    // 不做任何事，等待事件觸發
+                }
+            }
+
+            DebugLog($"ShowInitialOrderDelayed 完成，orderPanel.display: {(orderPanel != null ? orderPanel.style.display.value.ToString() : "null")}, platePanel.display: {(platePanel != null ? platePanel.style.display.value.ToString() : "null")}");
         }
 
         private void OnDestroy()
@@ -430,6 +477,35 @@ namespace Match3
         }
 
         /// <summary>
+        /// 更新餐盤背景圖片（在 ApplyUISettings 後調用）
+        /// </summary>
+        public void UpdatePlatePanelBackground()
+        {
+            if (platePanel == null)
+            {
+                DebugLog("⚠️ 餐盤面板尚未創建，無法更新背景");
+                return;
+            }
+
+            if (platePanelBackground != null)
+            {
+                platePanel.style.backgroundImage = new StyleBackground(platePanelBackground);
+                platePanel.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+                platePanel.style.backgroundColor = new Color(0f, 0f, 0f, 0f);
+                // 清除邊框（如果之前有設置的話）
+                platePanel.style.borderTopWidth = 0;
+                platePanel.style.borderBottomWidth = 0;
+                platePanel.style.borderLeftWidth = 0;
+                platePanel.style.borderRightWidth = 0;
+                DebugLog($"✓ 餐盤背景已更新: {platePanelBackground.name}");
+            }
+            else
+            {
+                DebugLog("⚠️ platePanelBackground 為 null，無法更新背景");
+            }
+        }
+
+        /// <summary>
         /// 更新訂單顯示
         /// </summary>
         /// <param name="recipe">配方</param>
@@ -461,8 +537,16 @@ namespace Match3
                 CreateIngredientProgressElement(foodType, collectedAmount, requiredAmount);
             }
 
-            // 顯示面板
+            // 顯示訂單面板
             orderPanel.style.display = DisplayStyle.Flex;
+            DebugLog($"訂單面板已顯示：{recipe.dishName}");
+            
+            // 同時顯示餐盤面板（確保重新開始時也顯示）
+            if (platePanel != null)
+            {
+                platePanel.style.display = DisplayStyle.Flex;
+                DebugLog("餐盤面板已顯示");
+            }
         }
 
         /// <summary>
@@ -965,19 +1049,31 @@ namespace Match3
         /// </summary>
         private void RefreshCurrentOrderDisplay()
         {
+            DebugLog($"RefreshCurrentOrderDisplay 被調用，orderPanel: {(orderPanel != null ? "存在" : "null")}");
+
             if (OrderManager.Instance != null)
             {
                 var activeOrders = OrderManager.Instance.GetActiveOrders();
+                DebugLog($"取得活躍訂單數量: {activeOrders.Count}");
+
                 if (activeOrders.Count > 0)
                 {
                     var order = activeOrders[0];
                     DebugLog($"刷新訂單顯示: {order.recipe.dishName}");
                     UpdateOrderDisplay(order.recipe, order.collectedIngredients, order.recipe.RequiredIngredients);
-                    
+
                     // 確保訂單面板顯示
                     if (orderPanel != null)
                     {
                         orderPanel.style.display = DisplayStyle.Flex;
+                        DebugLog($"訂單面板已設置為 Flex，當前 display: {orderPanel.style.display.value}");
+                    }
+                    
+                    // 確保餐盤面板也顯示（即使是空的）
+                    if (platePanel != null)
+                    {
+                        platePanel.style.display = DisplayStyle.Flex;
+                        DebugLog("餐盤面板已顯示");
                     }
                 }
                 else

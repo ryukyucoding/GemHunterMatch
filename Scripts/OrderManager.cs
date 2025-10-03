@@ -20,7 +20,8 @@ namespace Match3
         }
 
         [Header("訂單設定")]
-        public RecipeDatabase recipeDatabase;                          // 配方資料庫
+        [Tooltip("(已廢棄) 現在使用 RecipeLibrary 直接從代碼讀取配方")]
+        public RecipeDatabase recipeDatabase;                          // 配方資料庫（已廢棄，保留以兼容舊場景）
         public int maxConcurrentOrders = 3;                           // 最多同時進行的訂單數
         public float orderTimeLimit = 120f;                          // 訂單時間限制（秒）
 
@@ -108,13 +109,17 @@ namespace Match3
 
         private void Awake()
         {
+            DebugLog("OrderManager Awake 被調用");
+            
             if (Instance == null)
             {
                 Instance = this;
+                DebugLog("OrderManager 設置為 Singleton Instance");
                 InitializeOrderManager();
             }
             else
             {
+                DebugLog("已存在另一個 OrderManager Instance，銷毀此物件");
                 Destroy(gameObject);
             }
         }
@@ -122,10 +127,19 @@ namespace Match3
 
         private void Start()
         {
+            // 使用新的 RecipeLibrary 系統
+            var recipes = RecipeLibrary.GetAllRecipes();
+            DebugLog($"OrderManager.Start() 被調用，RecipeLibrary 配方數量: {recipes.Count}");
+
             // 開始第一個訂單
-            if (recipeDatabase != null && recipeDatabase.recipes.Count > 0)
+            if (recipes.Count > 0)
             {
+                DebugLog($"準備創建第一個訂單，配方數量: {recipes.Count}");
                 StartNewOrder();
+            }
+            else
+            {
+                DebugLog($"❌ 錯誤：RecipeLibrary 沒有配方，無法創建訂單");
             }
         }
 
@@ -143,13 +157,9 @@ namespace Match3
             activeOrders.Clear();
             completedOrderCount = 0;  // 重置已完成訂單計數
 
-            if (recipeDatabase == null)
-            {
-                Debug.LogWarning("OrderManager: 未設定 RecipeDatabase!");
-                return;
-            }
-
-            DebugLog("訂單管理器初始化完成");
+            // 使用新的 RecipeLibrary 系統，不再依賴 RecipeDatabase ScriptableObject
+            var recipes = RecipeLibrary.GetAllRecipes();
+            DebugLog($"訂單管理器初始化完成，RecipeLibrary 配方數量: {recipes.Count}");
         }
 
         /// <summary>
@@ -164,10 +174,11 @@ namespace Match3
                 return;
             }
 
-            Recipe recipe = specificRecipe ?? recipeDatabase.GetRandomRecipe();
+            // 使用 RecipeLibrary 獲取配方
+            Recipe recipe = specificRecipe ?? RecipeLibrary.GetRandomRecipe();
             if (recipe == null)
             {
-                Debug.LogError("OrderManager: 無法獲取配方!");
+                Debug.LogError("OrderManager: 無法從 RecipeLibrary 獲取配方!");
                 return;
             }
 
@@ -476,11 +487,14 @@ namespace Match3
 
         private void OnDestroy()
         {
+            DebugLog("OrderManager OnDestroy 被調用");
+            
             if (Instance == this)
             {
                 // 場景重載時重置訂單計數
                 completedOrderCount = 0;
                 Instance = null;
+                DebugLog("已清除 OrderManager Singleton Instance");
             }
         }
     }
