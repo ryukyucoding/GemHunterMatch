@@ -50,6 +50,7 @@ namespace Match3
         private List<VisualElement> plateIcons = new List<VisualElement>();
         private bool isAnimating = false;
         private Dictionary<FoodType, Sprite> foodSprites;
+        private float platePanelInitialRight;  // 餐盤面板的初始 right 位置值
 
         /// <summary>
         /// 食材進度元素類別
@@ -101,7 +102,22 @@ namespace Match3
             {
                 InitializeUI();
                 DebugLog($"InitializeUI 完成，orderPanel: {(orderPanel != null ? "✅" : "❌")}, platePanel: {(platePanel != null ? "✅" : "❌")}");
-                
+
+                // UI 初始化完成後，立即隱藏所有面板（防止顯示舊內容）
+                if (orderPanel != null)
+                {
+                    orderPanel.style.display = DisplayStyle.None;
+                }
+                if (platePanel != null)
+                {
+                    platePanel.style.display = DisplayStyle.None;
+                }
+                if (remainingOrdersLabel != null)
+                {
+                    remainingOrdersLabel.style.display = DisplayStyle.None;
+                }
+                DebugLog("UI 初始化後已隱藏所有面板");
+
                 // UI 初始化完成後，立即訂閱事件
                 SubscribeToOrderManagerEvents();
                 DebugLog("UI 初始化完成後已訂閱 OrderManager 事件");
@@ -123,20 +139,34 @@ namespace Match3
         
         private void OnEnable()
         {
-            // 場景重載或重新啟用時，先重置 UI（清除舊的殘留）
-            if (orderPanel != null && platePanel != null)
-            {
-                ResetUI();
-                DebugLog("OnEnable: 已重置 UI（清除舊殘留）");
-            }
-
             // 每次啟用時重新訂閱（確保場景重載後事件不丟失）
             if (OrderManager.Instance != null)
             {
                 SubscribeToOrderManagerEvents();
+            }
 
-                // 如果 UI 已經初始化，重新顯示訂單和餐盤
-                if (orderPanel != null && platePanel != null)
+            // 場景重載或重新啟用時，立即隱藏所有 UI（防止閃爍顯示舊內容）
+            if (orderPanel != null)
+            {
+                orderPanel.style.display = DisplayStyle.None;
+            }
+            if (platePanel != null)
+            {
+                platePanel.style.display = DisplayStyle.None;
+            }
+            if (remainingOrdersLabel != null)
+            {
+                remainingOrdersLabel.style.display = DisplayStyle.None;
+            }
+
+            // 然後重置 UI（清除舊的殘留內容）
+            if (orderPanel != null && platePanel != null)
+            {
+                ResetUI();
+                DebugLog("OnEnable: 已重置 UI（清除舊殘留）");
+
+                // 如果 UI 已經初始化且有訂單，重新顯示
+                if (OrderManager.Instance != null)
                 {
                     StartCoroutine(RefreshUIOnEnable());
                 }
@@ -330,7 +360,7 @@ namespace Match3
             orderPanel.AddToClassList("cooking-ui-panel");  // 添加 CSS 類以設定 z-index
 
             // 設定響應式樣式 - 參考 MainUI 的 top-panel 設計
-            orderPanel.style.display = DisplayStyle.Flex;  // 確保 Flex 布局
+            orderPanel.style.display = DisplayStyle.None;  // 初始時隱藏（防止閃爍）
             orderPanel.style.position = Position.Absolute;
             orderPanel.style.width = 1200;  // 寬度
             orderPanel.style.height = new StyleLength(new Length(70, LengthUnit.Percent)); // 進一步增加高度以容納6個食材（從60%增加到75%）
@@ -413,10 +443,7 @@ namespace Match3
                 rootElement.Add(orderPanel);
             }
 
-            // 初始時隱藏
-            orderPanel.style.display = DisplayStyle.None;
-
-            DebugLog("訂單面板創建完成");
+            DebugLog("訂單面板創建完成（初始隱藏）");
         }
 
         /// <summary>
@@ -447,7 +474,8 @@ namespace Match3
 
             // 設定樣式 - 使用餐盤 sprite 作為背景
             platePanel.style.position = Position.Absolute;
-            platePanel.style.right = -platePanelPosition.x - 350;  // 往左移動80px
+            platePanelInitialRight = -platePanelPosition.x - 350;  // 計算並儲存初始位置
+            platePanel.style.right = platePanelInitialRight;
             platePanel.style.bottom = new StyleLength(new Length(50, LengthUnit.Percent)); // 高度在整個畫面的1/2
             platePanel.style.translate = new StyleTranslate(new Translate(0, new Length(50, LengthUnit.Percent))); // 垂直置中
             platePanel.style.width = platePanelSize.x * 6;   // 放大5倍
@@ -533,6 +561,7 @@ namespace Match3
             remainingOrdersLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             remainingOrdersLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
             remainingOrdersLabel.style.whiteSpace = WhiteSpace.NoWrap;
+            remainingOrdersLabel.style.display = DisplayStyle.None;  // 初始時隱藏
 
             // 添加剩餘訂單數標籤到根元素
             if (coverElement != null)
@@ -545,10 +574,7 @@ namespace Match3
                 rootElement.Add(remainingOrdersLabel);
             }
 
-            // 初始化剩餘訂單數顯示
-            UpdateRemainingOrdersDisplay();
-
-            DebugLog("餐盤面板創建完成");
+            DebugLog("餐盤面板和剩餘訂單數標籤創建完成（初始隱藏）");
         }
 
         /// <summary>
@@ -862,7 +888,8 @@ namespace Match3
         {
             isAnimating = true;
 
-            float startRight = -platePanelPosition.x - 150;  // 當前位置
+            // 使用儲存的初始位置（確保與創建時一致）
+            float startRight = platePanelInitialRight;  // 當前位置
             float endRight = startRight - plateSlideDistance * 2;  // 往右滑動更遠（減少right值）
 
             float elapsedTime = 0f;
@@ -889,8 +916,8 @@ namespace Match3
             // 等待一下
             yield return new WaitForSeconds(0.3f);
 
-            // 重置位置和透明度，並清空
-            platePanel.style.right = startRight;
+            // 重置位置和透明度到初始值，並清空
+            platePanel.style.right = platePanelInitialRight;
             platePanel.style.opacity = 1f;
             ClearPlate();
 
