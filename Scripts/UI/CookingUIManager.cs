@@ -553,7 +553,7 @@ namespace Match3
             remainingOrdersLabel = new Label();
             remainingOrdersLabel.name = "RemainingOrdersLabel";
             remainingOrdersLabel.style.position = Position.Absolute;
-            remainingOrdersLabel.style.right = -platePanelPosition.x - 70;  // 再往左移動 (從 -100 改為 +50)
+            remainingOrdersLabel.style.right = -platePanelPosition.x - 50;  // 右邊距離
             remainingOrdersLabel.style.bottom = new StyleLength(new Length(15, LengthUnit.Percent)); // 螢幕底部往上15%
             remainingOrdersLabel.style.translate = new StyleTranslate(new Translate(0, 0));
             remainingOrdersLabel.style.fontSize = 120;  // 再放大字體 (從 150 改為 180)
