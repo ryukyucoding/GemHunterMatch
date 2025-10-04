@@ -303,9 +303,9 @@ namespace Match3
             // 設定響應式樣式 - 參考 MainUI 的 top-panel 設計
             orderPanel.style.display = DisplayStyle.Flex;  // 確保 Flex 布局
             orderPanel.style.position = Position.Absolute;
-            orderPanel.style.width = 1400;  // 寬度變成4倍（400 * 4）
+            orderPanel.style.width = 1200;  // 寬度
             orderPanel.style.height = new StyleLength(new Length(70, LengthUnit.Percent)); // 進一步增加高度以容納6個食材（從60%增加到75%）
-            orderPanel.style.left = 100;  // 向右移動
+            orderPanel.style.left = 80;  // 向右移動
             orderPanel.style.top = new StyleLength(new Length(50, LengthUnit.Percent));    // 再向上移動一些（從45%改為40%）
             orderPanel.style.translate = new StyleTranslate(new Translate(0, new Length(-50, LengthUnit.Percent))); // 垂直置中
             
@@ -402,7 +402,7 @@ namespace Match3
 
             // 設定樣式 - 使用餐盤 sprite 作為背景
             platePanel.style.position = Position.Absolute;
-            platePanel.style.right = -platePanelPosition.x - 250;  // 往左移動80px
+            platePanel.style.right = -platePanelPosition.x - 350;  // 往左移動80px
             platePanel.style.bottom = new StyleLength(new Length(50, LengthUnit.Percent)); // 高度在整個畫面的1/2
             platePanel.style.translate = new StyleTranslate(new Translate(0, new Length(50, LengthUnit.Percent))); // 垂直置中
             platePanel.style.width = platePanelSize.x * 6;   // 放大5倍
