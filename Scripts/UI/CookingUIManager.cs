@@ -425,7 +425,9 @@ namespace Match3
             if (plateSprite != null)
             {
                 platePanel.style.backgroundImage = new StyleBackground(plateSprite);
+#pragma warning disable CS0618
                 platePanel.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+#pragma warning restore CS0618
             }
             
             // 透明背景，無邊框
@@ -518,7 +520,9 @@ namespace Match3
             if (platePanelBackground != null)
             {
                 platePanel.style.backgroundImage = new StyleBackground(platePanelBackground);
+#pragma warning disable CS0618
                 platePanel.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+#pragma warning restore CS0618
                 platePanel.style.backgroundColor = new Color(0f, 0f, 0f, 0f);
                 // 清除邊框（如果之前有設置的話）
                 platePanel.style.borderTopWidth = 0;
@@ -622,8 +626,9 @@ namespace Match3
             if (foodSprites != null && foodSprites.ContainsKey(foodType) && foodSprites[foodType] != null)
             {
                 icon.style.backgroundImage = new StyleBackground(foodSprites[foodType]);
-                // 使用 ScaleToFit 並設定背景位置為居中，避免邊緣殘留
+#pragma warning disable CS0618
                 icon.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+#pragma warning restore CS0618
                 icon.style.unityBackgroundImageTintColor = Color.white;
             }
             else
@@ -764,8 +769,9 @@ namespace Match3
             if (spriteToUse != null)
             {
                 iconElement.style.backgroundImage = new StyleBackground(spriteToUse);
-                // 使用 ScaleToFit 並設定背景位置為居中，避免邊緣殘留
+#pragma warning disable CS0618
                 iconElement.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+#pragma warning restore CS0618
                 iconElement.style.unityBackgroundImageTintColor = Color.white;
             }
             else

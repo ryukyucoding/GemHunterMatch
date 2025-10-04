@@ -67,6 +67,7 @@ namespace Match3
         private Label m_LevelName;
         private ProgressBar m_TimeProgressBar;
         private VisualElement m_TimeTextContainer;  // 時間文字容器
+        private Label m_TimeBonusLabel;  // 時間獎勵標籤
 
         private VisualElement m_BottomBarRoot;
 
@@ -149,7 +150,8 @@ namespace Match3
             m_MoveCounter = m_Document.rootVisualElement.Q<Label>("MoveCounter");
             m_TimeProgressBar = m_Document.rootVisualElement.Q<ProgressBar>("TimeProgressBar");
             m_TimeTextContainer = m_Document.rootVisualElement.Q<VisualElement>("TimeTextContainer");
-            
+            m_TimeBonusLabel = m_Document.rootVisualElement.Q<Label>("TimeBonusLabel");
+
             m_EndTitleContent = m_Document.rootVisualElement.Q<VisualElement>("EndTitleContent");
             m_WinTitle = m_EndTitleContent.Q<VisualElement>("WinTitle");
             m_LoseTitle = m_EndTitleContent.Q<VisualElement>("LoseTitle");
@@ -320,14 +322,30 @@ namespace Match3
         
             ToggleDebugMenu();
 #endif
-            
+
             ApplySafeArea(m_Document.rootVisualElement.Q<VisualElement>("FullContent"));
             ApplySafeArea(m_EndScreen);
         }
-    
+
+        private void OnDisable()
+        {
+            // 取消訂閱
+            if (OrderManager.Instance != null)
+            {
+                OrderManager.Instance.OnOrderCompleted.RemoveListener(OnOrderCompletedForTimeBonus);
+            }
+        }
+
         public void Init()
         {
             m_LevelName.text = LevelData.Instance.LevelName;
+
+            // 在 Init 時訂閱 OrderManager 事件（此時所有系統都已初始化）
+            if (OrderManager.Instance != null)
+            {
+                OrderManager.Instance.OnOrderCompleted.RemoveListener(OnOrderCompletedForTimeBonus);
+                OrderManager.Instance.OnOrderCompleted.AddListener(OnOrderCompletedForTimeBonus);
+            }
             
             m_WinTitle.style.scale = Vector2.zero;
             m_LoseTitle.style.scale = Vector2.zero;
@@ -958,6 +976,62 @@ namespace Match3
             {
                 m_TimeProgressBar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             }
+        }
+
+        /// <summary>
+        /// 訂單完成時顯示時間獎勵
+        /// </summary>
+        private void OnOrderCompletedForTimeBonus(Recipe recipe, int orderID)
+        {
+            if (m_TimeBonusLabel != null && recipe != null && recipe.timeBonus > 0)
+            {
+                m_TimeBonusLabel.text = $"+{recipe.timeBonus} sec!!";
+                StartCoroutine(ShowTimeBonusAnimation());
+            }
+        }
+
+        /// <summary>
+        /// 時間獎勵顯示動畫
+        /// </summary>
+        private System.Collections.IEnumerator ShowTimeBonusAnimation()
+        {
+            if (m_TimeBonusLabel == null) yield break;
+
+            // 顯示標籤
+            m_TimeBonusLabel.style.display = DisplayStyle.Flex;
+            m_TimeBonusLabel.style.scale = new StyleScale(Vector2.zero);
+            m_TimeBonusLabel.style.opacity = 1f;
+
+            float duration = 0.3f;
+            float elapsed = 0f;
+
+            // 放大動畫
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = elapsed / duration;
+                float scale = Mathf.Lerp(0f, 1.2f, progress); // 放大到 1.2 倍
+                m_TimeBonusLabel.style.scale = new StyleScale(Vector2.one * scale);
+                yield return null;
+            }
+
+            // 保持顯示 1.5 秒
+            yield return new WaitForSeconds(1.5f);
+
+            // 淡出動畫
+            elapsed = 0f;
+            duration = 0.5f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = elapsed / duration;
+                float opacity = Mathf.Lerp(1f, 0f, progress);
+                m_TimeBonusLabel.style.opacity = opacity;
+                yield return null;
+            }
+
+            // 隱藏標籤
+            m_TimeBonusLabel.style.display = DisplayStyle.None;
         }
     }
 }

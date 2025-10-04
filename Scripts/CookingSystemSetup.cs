@@ -6,6 +6,7 @@ namespace Match3
     /// <summary>
     /// 料理系統設定腳本 - 在場景中放置此腳本來快速設置料理系統
     /// </summary>
+    [DefaultExecutionOrder(-10000)]  // 在 UIHandler(-9000) 之前執行，確保 OrderManager 先被創建
     public class CookingSystemSetup : MonoBehaviour
     {
         [Header("==== 料理系統快速設置 ====")]
