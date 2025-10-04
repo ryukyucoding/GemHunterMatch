@@ -43,6 +43,8 @@ namespace Match3
         public Vector2 platePanelSize = new Vector2(300, 300);  // 基礎大小，實際會放大5倍
         [Tooltip("餐盤面板背景圖片（可選）")]
         public Sprite platePanelBackground;
+        [Tooltip("廚師圖片（可選）")]
+        public Sprite chefSprite;
 
         [Space(10)]
         [Header("🎬 動畫設定")]
@@ -190,7 +192,10 @@ namespace Match3
             if (cookingUIManager.lettuceSprite == null) cookingUIManager.lettuceSprite = lettuceSprite;
             if (cookingUIManager.steakSprite == null) cookingUIManager.steakSprite = steakSprite;
             if (cookingUIManager.tomatoSprite == null) cookingUIManager.tomatoSprite = tomatoSprite;
-            
+
+            // 設定廚師圖片
+            if (cookingUIManager.chefSprite == null) cookingUIManager.chefSprite = chefSprite;
+
             // 餐盤背景已經由 CookingSystemInitializer 設置，這裡不需要重複設置
 
             DebugLog("✓ 應用了 UI 設定");

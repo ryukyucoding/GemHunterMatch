@@ -2824,6 +2824,7 @@ MonoBehaviour:
   platePanelPosition: {x: -300, y: -150}
   platePanelSize: {x: 250, y: 200}
   platePanelBackground: {fileID: 21300000, guid: 9760012ed9b8443c29455528ac8d4bd8, type: 3}
+  chefSprite: {fileID: -5807084750190558207, guid: 9fd35bd2d69ea4687bba0e15e5a678d4, type: 3}
   slideAnimationDuration: 1
   plateSlideDistance: 400
   enableDebugLog: 1

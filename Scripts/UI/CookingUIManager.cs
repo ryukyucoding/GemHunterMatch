@@ -23,6 +23,7 @@ namespace Match3
         public Vector2 platePanelSize = new Vector2(250, 200);  // 餐盤面板大小
         public Vector2 platePanelPosition = new Vector2(-300, -150); // 餐盤面板位置（相對右下角）
         public Sprite platePanelBackground;                     // 餐盤面板背景圖片
+        public Sprite chefSprite;                               // 廚師圖片
 
         [Header("動畫設定")]
         public float slideAnimationDuration = 1.0f;            // 滑動動畫持續時間
@@ -44,6 +45,7 @@ namespace Match3
         private Label remainingOrdersLabel;  // 剩餘訂單數標籤
         private VisualElement ingredientContainer;
         private VisualElement plateIconContainer;
+        private VisualElement chefImage;     // 廚師圖片元素
 
         // 內部狀態
         private List<IngredientProgressElement> ingredientElements = new List<IngredientProgressElement>();
@@ -116,6 +118,10 @@ namespace Match3
                 {
                     remainingOrdersLabel.style.display = DisplayStyle.None;
                 }
+                if (chefImage != null)
+                {
+                    chefImage.style.display = DisplayStyle.None;
+                }
                 DebugLog("UI 初始化後已隱藏所有面板");
 
                 // UI 初始化完成後，立即訂閱事件
@@ -157,6 +163,10 @@ namespace Match3
             if (remainingOrdersLabel != null)
             {
                 remainingOrdersLabel.style.display = DisplayStyle.None;
+            }
+            if (chefImage != null)
+            {
+                chefImage.style.display = DisplayStyle.None;
             }
 
             // 然後重置 UI（清除舊的殘留內容）
@@ -276,6 +286,12 @@ namespace Match3
             {
                 remainingOrdersLabel.style.display = DisplayStyle.None;
                 remainingOrdersLabel.text = "";
+            }
+
+            // 隱藏廚師圖片
+            if (chefImage != null)
+            {
+                chefImage.style.display = DisplayStyle.None;
             }
 
             DebugLog("CookingUI 重置完成");
@@ -476,7 +492,7 @@ namespace Match3
             platePanel.style.position = Position.Absolute;
             platePanelInitialRight = -platePanelPosition.x - 350;  // 計算並儲存初始位置
             platePanel.style.right = platePanelInitialRight;
-            platePanel.style.bottom = new StyleLength(new Length(50, LengthUnit.Percent)); // 高度在整個畫面的1/2
+            platePanel.style.bottom = new StyleLength(new Length(64, LengthUnit.Percent)); // 高度往上移（從50%改為60%）
             platePanel.style.translate = new StyleTranslate(new Translate(0, new Length(50, LengthUnit.Percent))); // 垂直置中
             platePanel.style.width = platePanelSize.x * 6;   // 放大5倍
             platePanel.style.height = platePanelSize.y * 6;  // 放大5倍
@@ -553,8 +569,8 @@ namespace Match3
             remainingOrdersLabel = new Label();
             remainingOrdersLabel.name = "RemainingOrdersLabel";
             remainingOrdersLabel.style.position = Position.Absolute;
-            remainingOrdersLabel.style.right = -platePanelPosition.x - 50;  // 右邊距離
-            remainingOrdersLabel.style.bottom = new StyleLength(new Length(15, LengthUnit.Percent)); // 螢幕底部往上15%
+            remainingOrdersLabel.style.right = -platePanelPosition.x - 100;  // 右邊距離
+            remainingOrdersLabel.style.bottom = new StyleLength(new Length(37, LengthUnit.Percent)); // 螢幕底部往上移（從15%改為35%）
             remainingOrdersLabel.style.translate = new StyleTranslate(new Translate(0, 0));
             remainingOrdersLabel.style.fontSize = 120;  // 再放大字體 (從 150 改為 180)
             remainingOrdersLabel.style.color = new Color(0.69f, 0.46f, 0.24f, 1f);  // 棕色文字
@@ -574,7 +590,50 @@ namespace Match3
                 rootElement.Add(remainingOrdersLabel);
             }
 
-            DebugLog("餐盤面板和剩餘訂單數標籤創建完成（初始隱藏）");
+            // 創建廚師圖片 - 在剩餘訂單數標籤下方
+            chefImage = new VisualElement();
+            chefImage.name = "ChefImage";
+            chefImage.style.position = Position.Absolute;
+            chefImage.style.right = -platePanelPosition.x - 200;  // 在右下角，稍微往左
+            chefImage.style.bottom = new StyleLength(new Length(-3, LengthUnit.Percent)); // 在畫面底部往下5%（負值表示往下）
+            chefImage.style.width = 1300;  // 廚師圖片寬度
+            chefImage.style.height = 1300; // 廚師圖片高度
+
+            // 嘗試載入廚師圖片
+            Sprite chef = chefSprite;
+            if (chef == null)
+            {
+                // 嘗試從 Resources 載入廚師圖片
+                chef = Resources.Load<Sprite>("UI/Food/noplate");
+
+                if (chef == null)
+                {
+                    DebugLog("⚠️ 未找到廚師圖片，請在 CookingSystemSetup 中設定 chefSprite");
+                }
+            }
+
+            if (chef != null)
+            {
+                chefImage.style.backgroundImage = new StyleBackground(chef);
+#pragma warning disable CS0618
+                chefImage.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+#pragma warning restore CS0618
+            }
+
+            chefImage.style.display = DisplayStyle.None;  // 初始時隱藏
+
+            // 添加廚師圖片到根元素
+            if (coverElement != null)
+            {
+                int coverIndex = rootElement.IndexOf(coverElement);
+                rootElement.Insert(coverIndex, chefImage);
+            }
+            else
+            {
+                rootElement.Add(chefImage);
+            }
+
+            DebugLog("餐盤面板、剩餘訂單數標籤和廚師圖片創建完成（初始隱藏）");
         }
 
         /// <summary>
@@ -1262,11 +1321,25 @@ namespace Match3
                 remainingOrdersLabel.enableRichText = true;
                 remainingOrdersLabel.text = $"<size=180><color=#F25A2D>{remaining}</color></size>  more {dishText} to go!!";
                 remainingOrdersLabel.style.display = DisplayStyle.Flex;
+
+                // 顯示廚師圖片
+                if (chefImage != null)
+                {
+                    chefImage.style.display = DisplayStyle.Flex;
+                }
+
                 DebugLog($"✓ 顯示剩餘訂單數：{remaining} more {dishText} to go!!");
             }
             else
             {
                 remainingOrdersLabel.style.display = DisplayStyle.None;
+
+                // 隱藏廚師圖片
+                if (chefImage != null)
+                {
+                    chefImage.style.display = DisplayStyle.None;
+                }
+
                 DebugLog("隱藏剩餘訂單數（已完成所有訂單）");
             }
         }

@@ -29,6 +29,10 @@ namespace Match3
         [Header("餐盤背景")]
         public Sprite platePanelBackground;
 
+        [Header("廚師圖片")]
+        public string chefSpritePath = "UI/Food/noplate";
+        public Sprite fallbackChefSprite;
+
         [Header("設定")]
         public bool enableDebugLog = true;
         public bool initializeOnStart = false;  // 默认关闭，由 CookingSystemSetup 控制初始化
@@ -101,6 +105,9 @@ namespace Match3
 
             // 載入並設定食材圖示
             LoadAndAssignFoodSprites(cookingUIManager);
+
+            // 載入並設定廚師圖片
+            LoadAndAssignChefSprite(cookingUIManager);
 
             DebugLog("✅ 料理系統初始化完成！");
         }
@@ -203,6 +210,19 @@ namespace Match3
             cookingUIManager.tomatoSprite = LoadSpriteWithFallback(tomatoSpritePath, fallbackTomatoSprite, "Tomato");
 
             DebugLog("食材圖示載入完成");
+        }
+
+        /// <summary>
+        /// 載入並分配廚師圖片
+        /// </summary>
+        private void LoadAndAssignChefSprite(CookingUIManager cookingUIManager)
+        {
+            DebugLog("開始載入廚師圖片...");
+
+            // 載入廚師圖片
+            cookingUIManager.chefSprite = LoadSpriteWithFallback(chefSpritePath, fallbackChefSprite, "Chef");
+
+            DebugLog("廚師圖片載入完成");
         }
 
         /// <summary>
