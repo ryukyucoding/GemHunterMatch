@@ -123,6 +123,13 @@ namespace Match3
         
         private void OnEnable()
         {
+            // 場景重載或重新啟用時，先重置 UI（清除舊的殘留）
+            if (orderPanel != null && platePanel != null)
+            {
+                ResetUI();
+                DebugLog("OnEnable: 已重置 UI（清除舊殘留）");
+            }
+
             // 每次啟用時重新訂閱（確保場景重載後事件不丟失）
             if (OrderManager.Instance != null)
             {
@@ -201,23 +208,30 @@ namespace Match3
         public void ResetUI()
         {
             DebugLog("重置 CookingUI");
-            
-            // 清空訂單顯示
-            ClearOrder();
-            
-            // 清空餐盤
-            ClearPlate();
-            
+
+            // 清空訂單顯示（但不隱藏面板，因為新訂單會立即顯示）
+            if (dishNameLabel != null)
+            {
+                dishNameLabel.text = "等待訂單...";
+            }
+
+            // 清空餐盤圖標（但保留空餐盤面板）
+            if (plateIconContainer != null)
+            {
+                plateIconContainer.Clear();
+                plateIcons.Clear();
+            }
+
             // 清空食材元素列表
             ingredientElements.Clear();
-            
+
             // 清空食材容器
             if (ingredientContainer != null)
             {
                 ingredientContainer.Clear();
             }
-            
-            // 隱藏面板
+
+            // 暫時隱藏面板（等待新訂單事件觸發後再顯示）
             if (orderPanel != null)
             {
                 orderPanel.style.display = DisplayStyle.None;
@@ -226,7 +240,14 @@ namespace Match3
             {
                 platePanel.style.display = DisplayStyle.None;
             }
-            
+
+            // 隱藏剩餘訂單數標籤
+            if (remainingOrdersLabel != null)
+            {
+                remainingOrdersLabel.style.display = DisplayStyle.None;
+                remainingOrdersLabel.text = "";
+            }
+
             DebugLog("CookingUI 重置完成");
         }
 
@@ -295,6 +316,14 @@ namespace Match3
         /// </summary>
         private void CreateOrderPanel()
         {
+            // 檢查是否已存在舊的面板，如果存在則先移除
+            var existingPanel = rootElement.Q<VisualElement>("CookingOrderPanel");
+            if (existingPanel != null)
+            {
+                existingPanel.RemoveFromHierarchy();
+                DebugLog("移除舊的訂單面板");
+            }
+
             // 創建主面板
             orderPanel = new VisualElement();
             orderPanel.name = "CookingOrderPanel";
@@ -395,6 +424,22 @@ namespace Match3
         /// </summary>
         private void CreatePlatePanel()
         {
+            // 檢查是否已存在舊的餐盤面板，如果存在則先移除
+            var existingPlatePanel = rootElement.Q<VisualElement>("CookingPlatePanel");
+            if (existingPlatePanel != null)
+            {
+                existingPlatePanel.RemoveFromHierarchy();
+                DebugLog("移除舊的餐盤面板");
+            }
+
+            // 檢查是否已存在舊的剩餘訂單數標籤，如果存在則先移除
+            var existingLabel = rootElement.Q<Label>("RemainingOrdersLabel");
+            if (existingLabel != null)
+            {
+                existingLabel.RemoveFromHierarchy();
+                DebugLog("移除舊的剩餘訂單數標籤");
+            }
+
             // 創建主面板
             platePanel = new VisualElement();
             platePanel.name = "CookingPlatePanel";
@@ -572,12 +617,17 @@ namespace Match3
             // 顯示訂單面板
             orderPanel.style.display = DisplayStyle.Flex;
             DebugLog($"訂單面板已顯示：{recipe.dishName}");
-            
-            // 同時顯示餐盤面板（確保重新開始時也顯示）
-            if (platePanel != null)
+
+            // 清空並顯示空餐盤（確保重新開始時顯示新的空餐盤）
+            if (platePanel != null && plateIconContainer != null)
             {
+                // 清空舊的食材圖標
+                plateIconContainer.Clear();
+                plateIcons.Clear();
+
+                // 顯示空餐盤
                 platePanel.style.display = DisplayStyle.Flex;
-                DebugLog("餐盤面板已顯示");
+                DebugLog("餐盤面板已顯示（空餐盤）");
             }
         }
 
@@ -1045,15 +1095,30 @@ namespace Match3
             if (OrderManager.Instance == null || plateIconContainer == null)
                 return;
 
-            // 清空當前餐盤
-            ClearPlate();
+            // 清空當前餐盤圖標（但保留餐盤面板）
+            if (plateIconContainer != null)
+            {
+                plateIconContainer.Clear();
+                plateIcons.Clear();
+            }
 
             var activeOrders = OrderManager.Instance.GetActiveOrders();
             if (activeOrders.Count == 0)
+            {
+                // 沒有訂單時，隱藏餐盤
+                if (platePanel != null)
+                {
+                    platePanel.style.display = DisplayStyle.None;
+                }
+                DebugLog("沒有訂單，餐盤已隱藏");
                 return;
+            }
 
             var order = activeOrders[0];
             var recipe = order.recipe;
+
+            // 計算總共有多少食材圖標要顯示
+            int totalIconsToShow = 0;
 
             // 只顯示當前訂單需要的食材
             foreach (var requiredIngredient in recipe.RequiredIngredients)
@@ -1062,8 +1127,8 @@ namespace Match3
                 int requiredAmount = requiredIngredient.Value;
 
                 // 獲取已收集數量
-                int collectedAmount = order.collectedIngredients.ContainsKey(foodType) 
-                    ? order.collectedIngredients[foodType] 
+                int collectedAmount = order.collectedIngredients.ContainsKey(foodType)
+                    ? order.collectedIngredients[foodType]
                     : 0;
 
                 // 計算應該顯示的圖標數量 = 已收集數量 / 3（向下取整）
@@ -1075,11 +1140,16 @@ namespace Match3
                     AddIngredientToPlate(foodType);
                 }
 
+                totalIconsToShow += iconsToShow;
                 DebugLog($"餐盤顯示 {foodType}: {iconsToShow} 個圖標 (已收集 {collectedAmount}/需求 {requiredAmount})");
             }
 
-            // 始終顯示餐盤（即使沒有食材圖標，也要顯示空餐盤）
-            platePanel.style.display = DisplayStyle.Flex;
+            // 只要有訂單，就顯示餐盤（即使沒有食材也顯示空餐盤）
+            if (platePanel != null)
+            {
+                platePanel.style.display = DisplayStyle.Flex;
+                DebugLog($"餐盤顯示（共 {totalIconsToShow} 個食材圖標）");
+            }
         }
 
         /// <summary>

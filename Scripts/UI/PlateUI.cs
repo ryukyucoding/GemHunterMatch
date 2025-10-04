@@ -62,6 +62,9 @@ namespace Match3
 
         private void Start()
         {
+            // 場景重載時，先清除舊的餐盤（防止殘留）
+            Clear();
+
             // 訂閱 OrderManager 事件
             if (OrderManager.Instance != null)
             {
@@ -69,9 +72,6 @@ namespace Match3
                 OrderManager.Instance.OnOrderCompleted.AddListener(OnOrderCompleted);
                 OrderManager.Instance.OnNewOrderStarted.AddListener(OnNewOrderStarted);
             }
-
-            // 初始化餐盤
-            Clear();
         }
 
         private void OnDestroy()

@@ -110,11 +110,16 @@ namespace Match3
         private void Awake()
         {
             DebugLog("OrderManager Awake 被調用");
-            
+
             if (Instance == null)
             {
                 Instance = this;
                 DebugLog("OrderManager 設置為 Singleton Instance");
+
+                // 重置訂單系統（清除場景重載前的殘留狀態）
+                activeOrders.Clear();
+                completedOrderCount = 0;
+
                 InitializeOrderManager();
             }
             else
