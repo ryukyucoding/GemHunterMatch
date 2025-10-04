@@ -655,6 +655,9 @@ namespace Match3
                 platePanel.style.display = DisplayStyle.Flex;
                 DebugLog("餐盤面板已顯示（空餐盤）");
             }
+
+            // 顯示剩餘訂單數標籤
+            UpdateRemainingOrdersDisplay();
         }
 
         /// <summary>
@@ -1228,7 +1231,10 @@ namespace Match3
         private void UpdateRemainingOrdersDisplay()
         {
             if (remainingOrdersLabel == null)
+            {
+                DebugLog("⚠️ remainingOrdersLabel 為 null，無法更新");
                 return;
+            }
 
             // 清空現有內容
             remainingOrdersLabel.Clear();
@@ -1238,12 +1244,15 @@ namespace Match3
             {
                 remainingOrdersLabel.text = "Loading...";
                 remainingOrdersLabel.style.display = DisplayStyle.Flex;
+                DebugLog("顯示 Loading...（等待初始化）");
                 return;
             }
 
             int completed = OrderManager.Instance.CompletedOrderCount;
             int required = LevelData.Instance.RequiredOrderCount;
             int remaining = required - completed;
+
+            DebugLog($"剩餘訂單數計算：已完成 {completed}，需求 {required}，剩餘 {remaining}");
 
             if (remaining > 0)
             {
@@ -1253,10 +1262,12 @@ namespace Match3
                 remainingOrdersLabel.enableRichText = true;
                 remainingOrdersLabel.text = $"<size=180><color=#F25A2D>{remaining}</color></size>  more {dishText} to go!!";
                 remainingOrdersLabel.style.display = DisplayStyle.Flex;
+                DebugLog($"✓ 顯示剩餘訂單數：{remaining} more {dishText} to go!!");
             }
             else
             {
                 remainingOrdersLabel.style.display = DisplayStyle.None;
+                DebugLog("隱藏剩餘訂單數（已完成所有訂單）");
             }
         }
 
